@@ -6,7 +6,6 @@ SERVER_HOST = '127.0.0.1'
 SERVER_PORT = 9999
 
 def receive_messages(client_socket):
-    """Thread untuk menerima pesan dari server"""
     while True:
         try:
             message = client_socket.recv(1024).decode('utf-8')
