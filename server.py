@@ -7,7 +7,7 @@ PORT = 9999
 clients = {}  # socket -> name
 lock = threading.Lock()
 
-def broadcast(message, sender_socket=None):
+def function_broadcast(message, sender_socket=None):
     with lock:
         for client_socket in list(clients.keys()):
             if client_socket != sender_socket:
@@ -22,7 +22,7 @@ def handle_client(client_socket, client_address):
     print(f"[+] Koneksi baru dari {ip}:{port}")
 
     try:
-        # Minta nama client
+        # Minta nama
         client_socket.send("Masukkan nama Anda: ".encode('utf-8'))
         name = client_socket.recv(1024).decode('utf-8').strip()
 
@@ -36,10 +36,11 @@ def handle_client(client_socket, client_address):
         client_socket.send(f"Selamat Datang di Chatroom, {name}!\n".encode('utf-8'))
 
         join_msg = f"[SERVER] {name} telah bergabung ke chatroom!"
-        broadcast(join_msg, client_socket)
+        function_broadcast(join_msg, client_socket)
         print(f"[BROADCAST] {join_msg}")
 
         while True:
+            #loop utama nunggu kalau ada message
             try:
                 message = client_socket.recv(1024).decode('utf-8').strip()
                 if not message:
@@ -47,7 +48,7 @@ def handle_client(client_socket, client_address):
 
                 full_msg = f"[{name}] {message}"
                 print(f"[MSG] {full_msg}")
-                broadcast(full_msg, client_socket)
+                function_broadcast(full_msg, client_socket)
 
             except ConnectionResetError:
                 break
@@ -58,18 +59,21 @@ def handle_client(client_socket, client_address):
     except Exception as e:
         print(f"[ERROR] handle_client: {e}")
     finally:
+        #kalo error/leave
         with lock:
             name = clients.pop(client_socket, f"{ip}:{port}")
         client_socket.close()
 
         leave_msg = f"[SERVER] {name} telah meninggalkan chatroom."
-        broadcast(leave_msg)
+        function_broadcast(leave_msg)
         print(f"[INFO] {leave_msg}")
 
 
 def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #IPv4,TCP
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    #Reuse PORT
     server.bind((HOST, PORT))
     server.listen(10)
     print(f"[SERVER] Chat server berjalan di {HOST}:{PORT}")
